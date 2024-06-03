@@ -1,0 +1,21 @@
+{
+  "template": "https://github.com/bruno-fs/cookiecutter-hypermodern-python",
+  "commit": "a516f7058ca67b612d08a933885c2bfa85d1f9e2",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "project_name": "django-json-agg",
+      "package_name": "json_agg",
+      "friendly_name": "Django JSON Agg",
+      "author": "Discovery Team",
+      "email": "discovery@redhat.com",
+      "github_user": "quipucords",
+      "version": "0.0.0",
+      "copyright_year": "2024",
+      "license": "GPL-3.0",
+      "development_status": "Development Status :: 4 - Beta",
+      "_template": "https://github.com/bruno-fs/cookiecutter-hypermodern-python"
+    }
+  },
+  "directory": null
+}
