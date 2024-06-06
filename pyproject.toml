@@ -20,6 +20,7 @@ Changelog = "https://github.com/quipucords/django-json-agg/releases"
 
 [tool.poetry.dependencies]
 python = "^3.8"
+django = ">=4.2"
 
 [tool.poetry.dev-dependencies]
 Pygments = ">=2.10.0"
