@@ -139,12 +139,25 @@ def safety(session: Session) -> None:
 
 
 @session(python=python_versions)
-def tests(session: Session) -> None:
+@nox.parametrize("database", ["sqlite", "postgresql"])
+def tests(session: Session, database: str) -> None:
     """Run the test suite."""
     session.install(".")
     session.install("coverage[toml]", "pytest", "pygments", "pytest-django", "faker")
+
+    db_args = [f"--db-vendor={database}"]
+
+    if database == "postgresql":
+        session.install("psycopg2")
+        for setting in ["name", "user", "password", "host", "port"]:
+            value = os.getenv(f"postgresql_{setting}".upper())
+            if value:
+                db_args.append(f"--db-{setting}={value}")
+
     try:
-        session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
+        session.run(
+            "coverage", "run", "--parallel", "-m", "pytest", *db_args, *session.posargs
+        )
     finally:
         if session.interactive:
             session.notify("coverage", posargs=[])

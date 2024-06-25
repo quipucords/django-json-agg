@@ -25,11 +25,24 @@ jobs:
           - { python: "3.12", os: "ubuntu-latest", session: "typeguard" }
           - { python: "3.12", os: "ubuntu-latest", session: "xdoctest" }
           - { python: "3.12", os: "ubuntu-latest", session: "docs-build" }
-
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       NOXSESSION: ${{ matrix.session }}
       FORCE_COLOR: "1"
       PRE_COMMIT_COLOR: "always"
+      POSTGRESQL_PASSWORD: "postgres"
 
     steps:
       - name: Check out the repository
