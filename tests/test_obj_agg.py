@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+import datetime
 from functools import partial
 from itertools import chain
 from typing import TYPE_CHECKING
 
 import pytest
 from django.db.models import DateTimeField
-from django.db.models import JSONField
 
 from json_agg import JSONObjectAgg
 from tests.models import Author
@@ -116,12 +116,17 @@ def test_aggregate_text(faker: Faker):
 
 
 @pytest.mark.django_db
-def test_aggregate_datetime(faker: Faker):
+def test_aggregate_datetime(faker: Faker, db_vendor: str):
     """Test JSONObjectAgg over a datetime value (Post.updated_at)."""
+    kw = {}
+    if db_vendor == "postgresql":
+        # enforce tz for postgresql only - sqlite don't support it.
+        kw = dict(tzinfo=datetime.UTC)
+
     expected_value_per_author_name = post_factory(
         faker,
         value_name="updated_at",
-        value_factory=partial(faker.date_time),
+        value_factory=partial(faker.date_time, **kw),
     )
 
     queryset = Author.objects.annotate(
@@ -142,13 +147,17 @@ def test_aggregate_json(faker: Faker):
         value_name="metadata",
         value_factory=partial(faker.pydict, allowed_types=(str, int)),
     )
-
+    # we can't use nested_output_field for JSONField because it would only work
+    # for sqlite, which internally stores json as text. On postgres, data is
+    # stored as jsonb, which is automatically translated to dict (maybe by psycopg2?).
+    # This distinction on how those objects are stored internally breaks JSONField
+    # default decoder, which doesn't expect dicts.
     queryset = Author.objects.annotate(
         post_metadata=JSONObjectAgg(
             "posts__title",
             "posts__metadata",
-            nested_output_field=JSONField(),
-            # sqlite_func="json",
+            # nested_output_field=JSONField(),
+            sqlite_func="json",
         )
     ).all()
 

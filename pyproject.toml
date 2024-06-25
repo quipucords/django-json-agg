@@ -22,7 +22,7 @@ Changelog = "https://github.com/quipucords/django-json-agg/releases"
 python = "^3.8"
 django = ">=4.2"
 
-[tool.poetry.group.dev.dependencies]
+[tool.poetry.group.devel.dependencies]
 Pygments = ">=2.10.0"
 coverage = { extras = ["toml"], version = ">=6.2" }
 faker = "^25.9.1"
@@ -30,6 +30,7 @@ furo = ">=2021.11.12"
 myst-parser = { version = ">=0.16.1" }
 pre-commit = ">=2.16.0"
 pre-commit-hooks = ">=4.1.0"
+psycopg2 = "^2.9.9"
 pydoclint = "^0.4.1"
 pytest = ">=6.2.5"
 pytest-django = "^4.8.0"
