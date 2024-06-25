@@ -27,6 +27,7 @@ jobs:
           - { python: "3.12", os: "ubuntu-latest", session: "docs-build" }
     services:
       postgres:
+        if: matrix.os == "ubuntu-latest"
         image: postgres:15
         env:
           POSTGRES_PASSWORD: postgres
