@@ -12,7 +12,6 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
 [![Ruff codestyle][ruff badge]][ruff project]
 
-
 [pypi status]: https://pypi.org/project/django-json-agg/
 [read the docs]: https://django-json-agg.readthedocs.io/
 [tests]: https://github.com/quipucords/django-json-agg/actions?workflow=Tests
