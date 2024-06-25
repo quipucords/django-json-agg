@@ -91,10 +91,10 @@ def test_aggregate_integer(faker: Faker):
     )
 
     queryset = Author.objects.annotate(
-        post_years=JSONObjectAgg("posts__title", "posts__year")
+        json_obj=JSONObjectAgg("posts__title", "posts__year")
     ).all()
 
-    result_as_dict = {author.name: author.post_years for author in queryset}
+    result_as_dict = {author.name: author.json_obj for author in queryset}
     assert result_as_dict == expected_value_per_author_name
 
 
@@ -108,10 +108,10 @@ def test_aggregate_text(faker: Faker):
     )
 
     queryset = Author.objects.annotate(
-        post_content=JSONObjectAgg("posts__title", "posts__content")
+        json_obj=JSONObjectAgg("posts__title", "posts__content")
     ).all()
 
-    result_as_dict = {author.name: author.post_content for author in queryset}
+    result_as_dict = {author.name: author.json_obj for author in queryset}
     assert result_as_dict == expected_value_per_author_name
 
 
@@ -130,12 +130,12 @@ def test_aggregate_datetime(faker: Faker, db_vendor: str):
     )
 
     queryset = Author.objects.annotate(
-        post_updated_at=JSONObjectAgg(
+        json_obj=JSONObjectAgg(
             "posts__title", "posts__updated_at", nested_output_field=DateTimeField()
         )
     ).all()
 
-    result_as_dict = {author.name: author.post_updated_at for author in queryset}
+    result_as_dict = {author.name: author.json_obj for author in queryset}
     assert result_as_dict == expected_value_per_author_name
 
 
@@ -153,13 +153,12 @@ def test_aggregate_json(faker: Faker):
     # This distinction on how those objects are stored internally breaks JSONField
     # default decoder, which doesn't expect dicts.
     queryset = Author.objects.annotate(
-        post_metadata=JSONObjectAgg(
+        json_obj=JSONObjectAgg(
             "posts__title",
             "posts__metadata",
-            # nested_output_field=JSONField(),
             sqlite_func="json",
         )
     ).all()
 
-    result_as_dict = {author.name: author.post_metadata for author in queryset}
+    result_as_dict = {author.name: author.json_obj for author in queryset}
     assert result_as_dict == expected_value_per_author_name
