@@ -176,7 +176,7 @@ jobs:
           nox --version
       - name: Run Nox
         run: |
-          nox --python=${{ matrix.python }} --session=${{ matrix.session }}
+          nox --python=${{ matrix.python }} --session="${{ matrix.session }}"
 
       - name: Upload coverage data
         uses: "actions/upload-artifact@v3"
