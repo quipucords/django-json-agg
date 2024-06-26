@@ -149,6 +149,8 @@ def tests(session: Session, database: str) -> None:
 
     if database == "postgresql":
         session.install("psycopg2")
+        if not os.getenv("POSTGRESQL_PASSWORD"):
+            session.skip("no postgresql password provided. skipping...")
         for setting in ["name", "user", "password", "host", "port"]:
             value = os.getenv(f"postgresql_{setting}".upper())
             if value:
