@@ -20,8 +20,6 @@ jobs:
           - { python: "3.10", os: "ubuntu-latest", session: "tests" }
           - { python: "3.9", os: "ubuntu-latest", session: "tests" }
           - { python: "3.8", os: "ubuntu-latest", session: "tests" }
-          - { python: "3.12", os: "windows-latest", session: "tests" }
-          - { python: "3.12", os: "macos-latest", session: "tests" }
           - { python: "3.12", os: "ubuntu-latest", session: "typeguard" }
           - { python: "3.12", os: "ubuntu-latest", session: "xdoctest" }
           - { python: "3.12", os: "ubuntu-latest", session: "docs-build" }
@@ -119,6 +117,72 @@ jobs:
         with:
           name: docs
           path: docs/_build
+
+  non-linux-tests:
+    # run non-linux tests separately because github actions don't support:
+    # - docker outside linux [1], which is a requirement for "services" needed
+    # for testing with postgresql
+    # - conditionally enabling services [2]
+    # [1]: https://docs.github.com/en/actions/creating-actions/about-custom-actions#types-of-actions
+    # [2]: https://github.com/actions/runner/issues/1414
+    name: ${{ matrix.session }} ${{ matrix.python }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {
+              python: "3.12",
+              os: "windows-latest",
+              session: "tests-3.12(database='sqlite')",
+            }
+          - {
+              python: "3.12",
+              os: "macos-latest",
+              session: "tests-3.12(database='sqlite')",
+            }
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v4.6.1
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --constraint="$(pwd)/.github/workflows/constraints.txt" pip
+          pip --version
+
+      - name: Upgrade pip in virtual environments
+        shell: python
+        run: |
+          import os
+          import pip
+
+          with open(os.environ["GITHUB_ENV"], mode="a") as io:
+              print(f"VIRTUALENV_PIP={pip.__version__}", file=io)
+
+      - name: Install Poetry
+        run: |
+          pipx install --pip-args=--constraint="$(pwd)/.github/workflows/constraints.txt" poetry
+          poetry --version
+
+      - name: Install Nox
+        run: |
+          pipx install --pip-args=--constraint="$(pwd)/.github/workflows/constraints.txt" nox
+          pipx inject --pip-args=--constraint="$(pwd)/.github/workflows/constraints.txt" nox nox-poetry
+          nox --version
+      - name: Run Nox
+        run: |
+          nox --python=${{ matrix.python }} --session=${{ matrix.session }}
+
+      - name: Upload coverage data
+        uses: "actions/upload-artifact@v3"
+        with:
+          name: coverage-data
+          path: ".coverage.*"
 
   coverage:
     runs-on: ubuntu-latest
