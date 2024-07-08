@@ -57,7 +57,7 @@ def test_aggregate_datetime(faker: Faker, db_vendor: str):
     kw = {}
     if db_vendor == "postgresql":
         # enforce tz for postgresql only - sqlite don't support it.
-        kw = dict(tzinfo=datetime.UTC)
+        kw = dict(tzinfo=datetime.timezone.utc)
 
     expected_value_per_author_name = post_factory(
         faker,
