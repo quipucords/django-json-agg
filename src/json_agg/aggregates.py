@@ -1,5 +1,6 @@
 """JSON themed aggregates for Django."""
 
+import abc
 from collections.abc import Callable
 from functools import partial
 from typing import Any
@@ -11,48 +12,23 @@ from django.db.models import Func
 from django.db.models import JSONField
 
 
-class JSONObjectAgg(Aggregate):
-    """Aggregate as a JSON object."""
+class JSONAggregateMixin(abc.ABC):
+    """Mixin for JSON aggregators."""
 
-    template = "%(function)s(%(expressions)s)"
-    output_field = JSONField(default=dict)
+    @abc.abstractmethod
+    def _convert_nested_value(self, value: Any, converter: callable):
+        """Convert nested values."""
 
-    def __init__(
+    def __init__(  # noqa: D107
         self,
-        name_expression: Any,
-        value_expression: Any,
+        *args,
         nested_output_field: Field = None,
         **kwargs,
     ):
-        """Aggregate expressions as a JSON object / python dict.
-
-        Args:
-            name_expression: expression that will be used as JSON keys.
-            value_expression: expression that will be used as JSON values.
-            vendor_func: If provided, values will be wrapped with the specified
-                function name in the given vendor. The actual keyword argument must
-                replace "vendor" with the vendor name (e.g., "sqlite_func" for SQLite).
-                This is particularly useful when "Cast" is not supported.
-            nested_output_field: Django's model Field representing values inside the
-                json.
-            kwargs: same as the ones available in django's Aggregate.
-        """
-        self.function = {
-            "sqlite": "JSON_GROUP_OBJECT",
-            "postgresql": "JSONB_OBJECT_AGG",
-        }[connection.vendor]
-        if vendor_func := kwargs.get(f"{connection.vendor}_func"):
-            value_expression = Func(value_expression, function=vendor_func)
         if nested_output_field and not isinstance(nested_output_field, Field):
             raise ValueError("'nested_output_field' must be a Django model Field.")
         self.nested_output_field = nested_output_field
-
-        super().__init__(name_expression, value_expression, **kwargs)
-
-    def _convert_nested_value(self, value, converter):
-        if not value:
-            return None
-        return {k: converter(v) for k, v in value.items()}
+        super().__init__(*args, **kwargs)
 
     def _nested_db_converter(self, value, expression, connection, db_converter):
         converter = partial(db_converter, expression=expression, connection=connection)
@@ -76,7 +52,50 @@ class JSONObjectAgg(Aggregate):
         )
 
 
-class JSONArrayAgg(Aggregate):
+class JSONObjectAgg(JSONAggregateMixin, Aggregate):
+    """Aggregate as a JSON object."""
+
+    template = "%(function)s(%(expressions)s)"
+    output_field = JSONField(default=dict)
+
+    def __init__(
+        self,
+        name_expression: Any,
+        value_expression: Any,
+        **kwargs,
+    ):
+        """Aggregate expressions as a JSON object / python dict.
+
+        Args:
+            name_expression: expression that will be used as JSON keys.
+            value_expression: expression that will be used as JSON values.
+            vendor_func: If provided, values will be wrapped with the specified
+                function name in the given vendor. The actual keyword argument must
+                replace "vendor" with the vendor name (e.g., "sqlite_func" for SQLite).
+                This is particularly useful when "Cast" is not supported.
+            nested_output_field: Django's model Field representing values inside the
+                json.
+            kwargs: same as the ones available in django's Aggregate.
+        """
+        self.function = {
+            "sqlite": "JSON_GROUP_OBJECT",
+            "postgresql": "JSONB_OBJECT_AGG",
+        }[connection.vendor]
+        if vendor_func := kwargs.get(f"{connection.vendor}_func"):
+            value_expression = Func(value_expression, function=vendor_func)
+        super().__init__(
+            name_expression,
+            value_expression,
+            **kwargs,
+        )
+
+    def _convert_nested_value(self, value, converter):
+        if not value:
+            return None
+        return {k: converter(v) for k, v in value.items()}
+
+
+class JSONArrayAgg(JSONAggregateMixin, Aggregate):
     """Aggregate as JSON array."""
 
     template = "%(function)s(%(expressions)s)"
@@ -91,6 +110,8 @@ class JSONArrayAgg(Aggregate):
                 function name in the given vendor. The actual keyword argument must
                 replace "vendor" with the vendor name (e.g., "sqlite_func" for SQLite).
                 This is particularly useful when "Cast" is not supported.
+            nested_output_field: Django's model Field representing values inside the
+                json.
             kwargs: same as the ones available in django's Aggregate.
         """
         self.function = {
@@ -100,3 +121,8 @@ class JSONArrayAgg(Aggregate):
         if vendor_func := kwargs.get(f"{connection.vendor}_func"):
             expression = Func(expression, function=vendor_func)
         super().__init__(expression, **kwargs)
+
+    def _convert_nested_value(self, value, converter):
+        if not value:
+            return None
+        return [converter(v) for v in value]
