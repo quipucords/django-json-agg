@@ -36,6 +36,16 @@ nox.options.sessions = (
 )
 
 
+TEST_DEPENDENCIES = [
+    "coverage[toml]",
+    "deepdiff",
+    "faker",
+    "pygments",
+    "pytest",
+    "pytest-django",
+]
+
+
 def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
     """Activate virtualenv in hooks installed by pre-commit.
 
@@ -142,19 +152,21 @@ def safety(session: Session) -> None:
 @nox.parametrize("database", ["sqlite", "postgresql"])
 def tests(session: Session, database: str) -> None:
     """Run the test suite."""
-    session.install(".")
-    session.install("coverage[toml]", "pytest", "pygments", "pytest-django", "faker")
+    dependencies = TEST_DEPENDENCIES.copy()
 
     db_args = [f"--db-vendor={database}"]
 
     if database == "postgresql":
-        session.install("psycopg2")
+        dependencies.append("psycopg2")
         if not os.getenv("POSTGRESQL_PASSWORD"):
             session.skip("no postgresql password provided. skipping...")
         for setting in ["name", "user", "password", "host", "port"]:
             value = os.getenv(f"postgresql_{setting}".upper())
             if value:
                 db_args.append(f"--db-{setting}={value}")
+
+    session.install(".")
+    session.install(*dependencies)
 
     try:
         session.run(
@@ -181,8 +193,11 @@ def coverage(session: Session) -> None:
 @session(python=python_versions[0])
 def typeguard(session: Session) -> None:
     """Runtime type checking using Typeguard."""
+    dependencies = TEST_DEPENDENCIES.copy()
+    dependencies.append("typeguard")
+
     session.install(".")
-    session.install("pytest", "typeguard", "pygments")
+    session.install(*dependencies)
     session.run("pytest", f"--typeguard-packages={package}", *session.posargs)
 
 
