@@ -1,6 +1,6 @@
 {
   "template": "https://github.com/bruno-fs/cookiecutter-hypermodern-python",
-  "commit": "a516f7058ca67b612d08a933885c2bfa85d1f9e2",
+  "commit": "c6eb54be973f72077cc15aadf5eb43a9ebd7978c",
   "checkout": null,
   "context": {
     "cookiecutter": {
