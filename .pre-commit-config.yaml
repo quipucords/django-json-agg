@@ -32,13 +32,18 @@ repos:
         entry: pydoclint
         language: system
         types: [python]
+      - id: ruff
+        name: ruff
+        entry: ruff check
+        args: [--fix]
+        language: python
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff-format
+        entry: ruff format
+        language: python
+        types_or: [python, pyi]
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v2.6.0
     hooks:
       - id: prettier
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.6
-    hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format

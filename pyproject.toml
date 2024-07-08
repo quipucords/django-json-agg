@@ -80,6 +80,7 @@ extend-select = [
 extend-ignore = [
     "COM812",
     "COM819",
+    "D107", # undocumented-public-init conflicts with DOC301
     "D206",
     "D300",
     "E111",
