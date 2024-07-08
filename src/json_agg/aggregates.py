@@ -1,7 +1,8 @@
 """JSON themed aggregates for Django."""
 
+from __future__ import annotations
+
 import abc
-from collections.abc import Callable
 from functools import partial
 from typing import Any
 
@@ -37,7 +38,7 @@ class JSONAggregateMixin(abc.ABC):
     def _nested_to_python(self, value, expression, connection):
         return self._convert_nested_value(value, self.nested_output_field.to_python)
 
-    def get_db_converters(self, connection: Any) -> list[Callable[..., Any]]:
+    def get_db_converters(self, connection: Any) -> list[callable[..., Any]]:
         """Override Django's BaseExpression method to handle nested output fields."""
         converters = super().get_db_converters(connection)
         if not self.nested_output_field:
