@@ -12,6 +12,7 @@ from django.db.models import DateTimeField
 
 from json_agg import JSONArrayAgg
 from tests.models import Author
+from tests.models import Post
 from tests.post_factory import post_factory
 
 
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.django_db
 def test_aggregate_integer(faker: Faker):
-    """Test JSONObjectAgg over a integer value (Post.year)."""
+    """Test JSONArrayAgg over a integer value (Post.year)."""
     expected_value_per_author_name = post_factory(
         faker,
         value_name="year",
@@ -37,7 +38,7 @@ def test_aggregate_integer(faker: Faker):
 
 @pytest.mark.django_db
 def test_aggregate_text(faker: Faker):
-    """Test JSONObjectAgg over a integer value (Post.content)."""
+    """Test JSONArrayAgg over a integer value (Post.content)."""
     expected_value_per_author_name = post_factory(
         faker,
         value_name="content",
@@ -53,7 +54,7 @@ def test_aggregate_text(faker: Faker):
 
 @pytest.mark.django_db
 def test_aggregate_datetime(faker: Faker, db_vendor: str):
-    """Test JSONObjectAgg over a datetime value (Post.updated_at)."""
+    """Test JSONArrayAgg over a datetime value (Post.updated_at)."""
     kw = {}
     if db_vendor == "postgresql":
         # enforce tz for postgresql only - sqlite don't support it.
@@ -78,7 +79,7 @@ def test_aggregate_datetime(faker: Faker, db_vendor: str):
 
 @pytest.mark.django_db
 def test_aggregate_json(faker: Faker):
-    """Test JSONObjectAgg over a json value (Post.metadata)."""
+    """Test JSONArrayAgg over a json value (Post.metadata)."""
     expected_value_per_author_name = post_factory(
         faker,
         value_name="metadata",
@@ -97,3 +98,75 @@ def test_aggregate_json(faker: Faker):
     result_as_dict = {author.name: author.json_array for author in queryset}
     diff = DeepDiff(result_as_dict, expected_value_per_author_name, ignore_order=True)
     assert diff == {}, diff
+
+
+def test_raise_value_error_invalid_nested_output_field():
+    """Ensure ValueError is raised if invalid type is used for nested_output_field."""
+    with pytest.raises(ValueError):
+        JSONArrayAgg("foo", nested_output_field=True)
+
+
+@pytest.mark.django_db
+def test_with_no_related_objects(faker: Faker):
+    """Test JSONArrayAgg aggregating when there are no related objects."""
+    author_name = faker.name()
+    Author.objects.create(name=author_name)
+
+    annotated_result = Author.objects.annotate(
+        json_array=JSONArrayAgg("posts__title")
+    ).first()
+
+    # [None] might seem unexpected, postgresql indeed returns [null]
+    assert annotated_result.json_array == [None]
+    assert annotated_result.name == author_name
+
+
+@pytest.mark.django_db
+def test_no_related_objects_with_nested_output_field(faker: Faker):
+    """Test JSONArrayAgg aggregating when there are no related objects."""
+    author_name = faker.name()
+    Author.objects.create(name=author_name)
+
+    annotated_result = Author.objects.annotate(
+        json_array=JSONArrayAgg(
+            "posts__updated_at", nested_output_field=DateTimeField()
+        )
+    ).first()
+
+    # [None] might seem unexpected, postgresql indeed returns [null]
+    assert annotated_result.json_array == [None]
+    assert annotated_result.name == author_name
+
+
+@pytest.mark.django_db
+def test_null_value(faker: Faker):
+    """Test JSONArrayAgg aggregating when related object has null value."""
+    author_name = faker.name()
+    post_title = faker.slug()
+    author = Author.objects.create(name=author_name)
+    Post.objects.create(title=post_title, author=author, content=None)
+
+    annotated_result = Author.objects.annotate(
+        json_array=JSONArrayAgg("posts__content")
+    ).first()
+
+    assert annotated_result.json_array == [None]
+    assert annotated_result.name == author_name
+
+
+@pytest.mark.django_db
+def test_null_value_with_nested_output_field(faker: Faker):
+    """Test JSONArrayAgg aggregating when related object has null value."""
+    author_name = faker.name()
+    post_title = faker.slug()
+    author = Author.objects.create(name=author_name)
+    Post.objects.create(title=post_title, author=author, updated_at=None)
+
+    annotated_result = Author.objects.annotate(
+        json_array=JSONArrayAgg(
+            "posts__updated_at", nested_output_field=DateTimeField()
+        )
+    ).first()
+
+    assert annotated_result.json_array == [None]
+    assert annotated_result.name == author_name
