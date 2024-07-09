@@ -8,10 +8,10 @@ from django.db import models
 class Post(models.Model):
     """Model representing a blog post."""
 
-    title = models.CharField(max_length=100)
+    title = models.CharField(max_length=100, null=True)
     year = models.IntegerField(default=datetime.now().year)
     updated_at = models.DateTimeField(null=True)
-    content = models.TextField()
+    content = models.TextField(null=True)
     metadata = models.JSONField(default=dict)
     author = models.ForeignKey(
         "tests.Author", related_name="posts", on_delete=models.CASCADE

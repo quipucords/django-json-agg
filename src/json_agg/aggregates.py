@@ -11,6 +11,7 @@ from django.db.models import Aggregate
 from django.db.models import Field
 from django.db.models import Func
 from django.db.models import JSONField
+from django.db.models import Q
 
 
 class JSONAggregateMixin(abc.ABC):
@@ -83,16 +84,35 @@ class JSONObjectAgg(JSONAggregateMixin, Aggregate):
         }[connection.vendor]
         if vendor_func := kwargs.get(f"{connection.vendor}_func"):
             value_expression = Func(value_expression, function=vendor_func)
+        # key can't be NULL, so lets exclude it
+        not_null_key_filter = Q(**{f"{name_expression}__isnull": False})
+        filters = kwargs.pop("filter", None)
+        if not filters:
+            filters = not_null_key_filter
+        else:
+            filters = filters & not_null_key_filter
         super().__init__(
             name_expression,
             value_expression,
+            filter=filters,
             **kwargs,
         )
 
     def _convert_nested_value(self, value, converter):
         if not value:
-            return None
+            return {}
         return {k: converter(v) for k, v in value.items()}
+
+    @property
+    def convert_value(self) -> callable:
+        """Override BaseExpression.convert_value to handle json objects."""
+
+        def _converter(value, expression, connection):
+            if not value:
+                return "{}"
+            return value
+
+        return _converter
 
 
 class JSONArrayAgg(JSONAggregateMixin, Aggregate):
@@ -122,6 +142,6 @@ class JSONArrayAgg(JSONAggregateMixin, Aggregate):
         super().__init__(expression, **kwargs)
 
     def _convert_nested_value(self, value, converter):
-        if not value:
-            return None
+        if not value:  # pragma: no cover
+            return []
         return [converter(v) for v in value]
