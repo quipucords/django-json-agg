@@ -8,6 +8,8 @@ from django.conf import settings
 
 
 def pytest_addoption(parser: pytest.Parser):
+    """Customize pytest arguments."""
+    # db options
     parser.addoption("--db-vendor", action="store", default="sqlite")
     parser.addoption("--db-name", action="store", default="postgres")
     parser.addoption("--db-user", action="store", default="postgres")
@@ -17,11 +19,13 @@ def pytest_addoption(parser: pytest.Parser):
 
 
 @pytest.fixture(scope="session")
-def db_vendor(pytestconfig):
-    return pytestconfig.getoption("--db-vendor")
+def db_vendor():
+    """Fixture exposing django db vendor in use."""
+    return django.db.connection.vendor
 
 
 def pytest_configure(config: pytest.Config):
+    """Overload `pytest_configure` to setup django app for testing."""
     db_settings = get_db_settings(config)
     settings.configure(
         DEBUG_PROPAGATE_EXCEPTIONS=True,
@@ -65,9 +69,10 @@ def pytest_configure(config: pytest.Config):
 
 
 def get_db_settings(config: pytest.Config):
+    """Get django settings.DATABASE config based on vendor."""
     valid_db_vendors = ["sqlite", "postgresql"]
     vendor_name = config.getoption("--db-vendor")
-    if vendor_name not in valid_db_vendors:
+    if vendor_name not in valid_db_vendors:  # pragma: no cover
         raise pytest.UsageError(
             f"Invalid db vendor ('{vendor_name}'). Valid values are {valid_db_vendors}."
         )

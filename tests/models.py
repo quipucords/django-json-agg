@@ -1,9 +1,13 @@
+"""models for testing json_agg."""
+
 from datetime import datetime
 
 from django.db import models
 
 
 class Post(models.Model):
+    """Model representing a blog post."""
+
     title = models.CharField(max_length=100)
     year = models.IntegerField(default=datetime.now().year)
     updated_at = models.DateTimeField(null=True)
@@ -15,4 +19,6 @@ class Post(models.Model):
 
 
 class Author(models.Model):
+    """Model representing a blog post Author."""
+
     name = models.CharField(max_length=100)
