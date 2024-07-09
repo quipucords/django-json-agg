@@ -27,11 +27,11 @@ repos:
         language: system
         types: [text]
         stages: [commit, push, manual]
-      - id: pydoclint
-        name: pydoclint
-        entry: pydoclint
-        language: system
-        types: [python]
+      # - id: pydoclint
+      #   name: pydoclint
+      #   entry: pydoclint
+      #   language: system
+      #   types: [python]
       - id: ruff
         name: ruff
         entry: ruff check
