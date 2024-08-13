@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-json-agg"
-version = "0.0.0"
+version = "0.0.1"
 description = "Django JSON Agg"
 authors = ["Discovery Team <discovery@redhat.com>"]
 license = "GPL-3.0"
