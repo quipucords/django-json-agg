@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - master
 
 jobs:
   release:
@@ -15,7 +14,6 @@ jobs:
       url: https://pypi.org/p/django-json-agg
     permissions:
       id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
-      contents: write # Required for pushing tags - https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#permissions
     steps:
       - name: Check out the repository
         uses: actions/checkout@v3
@@ -42,19 +40,26 @@ jobs:
         run: |
           echo "::set-output name=sha::$(git rev-parse --verify --quiet HEAD^)"
 
-      - name: Detect and tag new version
+      - name: Check version
         id: check-version
         if: steps.check-parent-commit.outputs.sha
-        uses: salsify/action-detect-and-tag-new-version@v2.0.3
+        run: |
+          echo "::set-output name=version::$(poetry version -s)"
+
+      - name: Tag new version if it doesn't exist
+        id: tag-version
+        if: steps.check-version.outputs.version
+        uses: butlerlogic/action-autotag@1.1.4
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         with:
-          version-command: |
-            bash -o pipefail -c "poetry version | awk '{ print \$2 }'"
+          version: "${{ steps.check-version.outputs.version }}"
 
       - name: Bump version for developmental release
-        if: "! steps.check-version.outputs.tag"
+        if: "! steps.tag-version.outputs.tagname"
         run: |
           poetry version patch &&
-          version=$(poetry version | awk '{ print $2 }') &&
+          version=$(poetry version -s) &&
           poetry version $version.dev.$(date +%s)
 
       - name: Build package
@@ -62,11 +67,11 @@ jobs:
           poetry build --ansi
 
       - name: Publish package on PyPI
-        if: steps.check-version.outputs.tag
+        if: steps.tag-version.outputs.tagname
         uses: pypa/gh-action-pypi-publish@v1.9.0
 
       - name: Publish package on TestPyPI
-        if: "! steps.check-version.outputs.tag"
+        if: "! steps.tag-version.outputs.tagname"
         uses: pypa/gh-action-pypi-publish@v1.9.0
         with:
           repository-url: https://test.pypi.org/legacy/
@@ -74,7 +79,7 @@ jobs:
       - name: Publish the release notes
         uses: release-drafter/release-drafter@v6.0.0
         with:
-          publish: ${{ steps.check-version.outputs.tag != '' }}
-          tag: ${{ steps.check-version.outputs.tag }}
+          publish: ${{ steps.tag-version.outputs.tagname != '' }}
+          tag: ${{ steps.tag-version.outputs.tagname }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
