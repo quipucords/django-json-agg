@@ -38,13 +38,13 @@ jobs:
       - name: Check if there is a parent commit
         id: check-parent-commit
         run: |
-          echo "::set-output name=sha::$(git rev-parse --verify --quiet HEAD^)"
+          echo "sha=$(git rev-parse --verify --quiet HEAD^)" >> $GITHUB_OUTPUT
 
       - name: Check version
         id: check-version
         if: steps.check-parent-commit.outputs.sha
         run: |
-          echo "::set-output name=version::$(poetry version -s)"
+          echo "version=$(poetry version -s)" >> $GITHUB_OUTPUT
 
       - name: Tag new version if it doesn't exist
         id: tag-version
