@@ -49,7 +49,7 @@ jobs:
       - name: Tag new version if it doesn't exist
         id: tag-version
         if: steps.check-version.outputs.version
-        uses: butlerlogic/action-autotag@1.1.4
+        uses: butlerlogic/action-autotag@1.1.2 # don't update until https://github.com/ButlerLogic/action-autotag/issues/49 is fixed
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         with:
