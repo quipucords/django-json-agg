@@ -14,9 +14,10 @@ jobs:
       url: https://pypi.org/p/django-json-agg
     permissions:
       id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
+      contents: write # Required for pushing tags - https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#permissions
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
@@ -49,14 +50,14 @@ jobs:
       - name: Tag new version if it doesn't exist
         id: tag-version
         if: steps.check-version.outputs.version
-        uses: butlerlogic/action-autotag@1.1.3 # don't update until https://github.com/ButlerLogic/action-autotag/issues/49 is fixed
+        uses: bruno-fs/repo-tagger@1.0.0
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         with:
-          version: "${{ steps.check-version.outputs.version }}"
+          tag: "${{ steps.check-version.outputs.version }}"
 
       - name: Bump version for developmental release
-        if: "! steps.tag-version.outputs.tagname"
+        if: "! steps.tag-version.outputs.tag"
         run: |
           poetry version patch &&
           version=$(poetry version -s) &&
@@ -67,11 +68,11 @@ jobs:
           poetry build --ansi
 
       - name: Publish package on PyPI
-        if: steps.tag-version.outputs.tagname
+        if: steps.tag-version.outputs.tag
         uses: pypa/gh-action-pypi-publish@v1.9.0
 
       - name: Publish package on TestPyPI
-        if: "! steps.tag-version.outputs.tagname"
+        if: "! steps.tag-version.outputs.tag"
         uses: pypa/gh-action-pypi-publish@v1.9.0
         with:
           repository-url: https://test.pypi.org/legacy/
@@ -79,7 +80,7 @@ jobs:
       - name: Publish the release notes
         uses: release-drafter/release-drafter@v6.0.0
         with:
-          publish: ${{ steps.tag-version.outputs.tagname != '' }}
-          tag: ${{ steps.tag-version.outputs.tagname }}
+          publish: ${{ steps.tag-version.outputs.tag != '' }}
+          tag: ${{ steps.tag-version.outputs.tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
